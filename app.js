@@ -4,6 +4,8 @@ const express = require('express');
 const morgan = require('morgan');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const AppError = require('./utils/appError');
+const globalErrorHandller = require('./controllers/errorController');
 
 const app = express();
 app.use(express.static(`${__dirname}/public`));
@@ -23,5 +25,20 @@ if (process.env.NODE_ENV === 'development') {
 // ROUTES
 app.use('/api/v1/tours', tourRouter); //tourRouter like sub application
 app.use('/api/v1/users', userRouter); //userRouter like sub application
+
+// If there is no middleware was matched and run above, this is the final middlewares in req-res-cycle
+// Therefore, it will handle all route was not declared.
+app.all('*', (req, res, next) => {
+  // const err = new Error(`Can't find ${req.originalUrl} on this server !`);
+  // err.statusCode = 404;
+  // err.status = 'fail';
+
+  //next(err); //next(agr) with 1 agr will automatically run global Error handling by Express
+  next(new AppError(`Can't find ${req.originalUrl} on this server !`, 404));
+});
+
+// Global Error handling by Express
+// globalErrorHandller: Middleware with 4 agrs automatically known as 'global Error handling' by Express.
+app.use(globalErrorHandller);
 
 module.exports = app;
