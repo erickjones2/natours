@@ -2,25 +2,69 @@
 
 const express = require('express');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
+
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandller = require('./controllers/errorController');
 
+// Serving static file, means we can access file in this dir using dir path in query string
 const app = express();
 app.use(express.static(`${__dirname}/public`));
 
-app.use(express.json()); // using middleware and for req.bodys
+// Limit amount of data from req.body to 10kb to protect server from attacker(overload server)
+app.use(express.json({ limit: '10kb' })); // Like body-parser, using this middleware to attach req.body property, default in express
 
+// After attach req.body, now we need to fileter body out of malicious code in body
+// Data sanitization against NoSQL injection( "email": { $gt: "" })
+app.use(mongoSanitize()); // This middleware removes all . $ from req.body
+
+// Data sanitization against XSS(cross-site script)
+app.use(xss());
+
+// Prevent parameter pollution like (?sort=duration&sort=price) but correct is 'sort=duration,price'
+app.use(
+  hpp({
+    whitelist: [
+      'duration',
+      'ratingsAverage',
+      'ratingsQuantity',
+      'maxGroupSize',
+      'difficulty',
+      'price'
+    ] // Array allows some fields to be duplicated like "{{URL}}/api/v1/tours?duration=7&duration=9"
+  })
+);
+
+// Demo middleware
 app.use((req, res, next) => {
   //create our own middleware
-  console.log('Req, Res went through this Mid-ware !');
+  // console.log('Req, Res went through this Mid-ware !');
   next();
 });
 
+// GLOBAL MIDDLEWARES
+// Set security HTTP header
+app.use(helmet()); //use(put a fuction not function call, so helmet() return a function)
+
+// Development logginf using morgan
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Using rate limiting to prevent 'Brute force attack' and 'denial of server' by limiting
+// number of request per certain amount of time.
+const limiter = rateLimit({
+  max: 100, // max request
+  windowMs: 60 * 60 * 1000, // per 1 hours was transfer to milli second
+  message: 'Too many requests from this IP, please try again in 1 hour !'
+});
+app.use('/api', limiter);
 
 // ROUTES
 app.use('/api/v1/tours', tourRouter); //tourRouter like sub application

@@ -1,6 +1,8 @@
+// Quote: "FAT MODEL, THIN CONTROLLER"
+
 const mongoose = require('mongoose');
 const slugify = require('slugify');
-// const validator = require('validator');
+// const validator = require('validator'); // npm package for validator
 
 const tourSchema = new mongoose.Schema(
   // Schema(definition-schema, options-schema)
@@ -97,6 +99,7 @@ tourSchema.virtual('durationWeeks').get(function() {
 
 // DOCUMENT MIDDLEWARE
 // Run before save(), create() not insertOne/Many()
+// Run between taking data and saving data
 tourSchema.pre('save', function(next) {
   // HOOKS or Middlewares is the name of middleware in Mongoose
   // 'this' points to current processed document
