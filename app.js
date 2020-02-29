@@ -10,6 +10,7 @@ const hpp = require('hpp');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandller = require('./controllers/errorController');
 
@@ -69,6 +70,7 @@ app.use('/api', limiter);
 // ROUTES
 app.use('/api/v1/tours', tourRouter); //tourRouter like sub application
 app.use('/api/v1/users', userRouter); //userRouter like sub application
+app.use('/api/v1/reviews', reviewRouter);
 
 // If there is no middleware was matched and run above, this is the final middlewares in req-res-cycle
 // Therefore, it will handle all route was not declared.

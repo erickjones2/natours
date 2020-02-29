@@ -1,5 +1,3 @@
-const Tour = require('./../models/tourModel');
-
 class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
@@ -16,7 +14,7 @@ class APIFeatures {
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
 
-    this.query = Tour.find(JSON.parse(queryStr)); // Tour.find(queryObj) returns Query obj
+    this.query = this.query.find(JSON.parse(queryStr)); // Tour.find(queryObj) returns Query obj
 
     return this; // 'this' means returning this current object
   }
