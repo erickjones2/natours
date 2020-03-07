@@ -1,5 +1,5 @@
 // Everything in Express was middlewares to handle req --> res cycle
-
+const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
@@ -7,19 +7,31 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const viewRouter = require('./routes/viewRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandller = require('./controllers/errorController');
 
-// Serving static file, means we can access file in this dir using dir path in query string
 const app = express();
-app.use(express.static(`${__dirname}/public`));
+
+// Set up Pug (Template Engine)
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
+
+// Serving static file, means we can access file in this dir using dir path in query string
+// So file in "public" folder can be query like "http://127.0.0.1:3000/img/favicon.png"
+// The way html finds css file the same like this
+// app.use(express.static(`${__dirname}/public`)); //Or below
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Limit amount of data from req.body to 10kb to protect server from attacker(overload server)
 app.use(express.json({ limit: '10kb' })); // Like body-parser, using this middleware to attach req.body property, default in express
+app.use(express.urlencoded({ extended: true, limit: '10kb' })); // for using req.body when data was submitted by html-form
+app.use(cookieParser());
 
 // After attach req.body, now we need to fileter body out of malicious code in body
 // Data sanitization against NoSQL injection( "email": { $gt: "" })
@@ -46,6 +58,7 @@ app.use(
 app.use((req, res, next) => {
   //create our own middleware
   // console.log('Req, Res went through this Mid-ware !');
+  console.log(req.cookies);
   next();
 });
 
@@ -68,6 +81,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // ROUTES
+app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter); //tourRouter like sub application
 app.use('/api/v1/users', userRouter); //userRouter like sub application
 app.use('/api/v1/reviews', reviewRouter);

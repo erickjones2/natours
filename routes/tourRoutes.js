@@ -16,7 +16,7 @@ const router = express.Router();
 //     reviewController.createReview
 //   );
 
-// Alternatives nested routes implementation
+// Alternatives of nested routes implementation
 router.use('/:tourId/reviews', reviewRouter);
 
 router.route('/tour-stats').get(tourController.getTourStats);
