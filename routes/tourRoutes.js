@@ -55,6 +55,8 @@ router
   .patch(
     authController.protect,
     authController.restrictTo('admin', 'lead-guide'),
+    tourController.updateTourImages,
+    tourController.resizeTourImages,
     tourController.updateTour
   ) // PATCH updates small pieces of document, PUT replace existing document
   .delete(

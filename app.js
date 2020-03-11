@@ -12,6 +12,7 @@ const cookieParser = require('cookie-parser');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandller = require('./controllers/errorController');
@@ -37,7 +38,7 @@ app.use(cookieParser());
 // Data sanitization against NoSQL injection( "email": { $gt: "" })
 app.use(mongoSanitize()); // This middleware removes all . $ from req.body
 
-// Data sanitization against XSS(cross-site script)
+// Data sanitization against XSS(cross-site script attack)
 app.use(xss());
 
 // Prevent parameter pollution like (?sort=duration&sort=price) but correct is 'sort=duration,price'
@@ -58,7 +59,7 @@ app.use(
 app.use((req, res, next) => {
   //create our own middleware
   // console.log('Req, Res went through this Mid-ware !');
-  console.log(req.cookies);
+  // console.log(req.cookies);
   next();
 });
 
@@ -85,6 +86,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter); //tourRouter like sub application
 app.use('/api/v1/users', userRouter); //userRouter like sub application
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 // If there is no middleware was matched and run above, this is the final middlewares in req-res-cycle
 // Therefore, it will handle all route was not declared.

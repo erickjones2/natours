@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
-const sendEmail = require('./../utils/email');
+const Email = require('./../utils/email');
 
 const signToken = id => {
   // sign(payload, secret)
@@ -22,6 +22,11 @@ const createSendToken = (user, statusCode, res) => {
     ),
     // secure: true, // Only use HTTPS to secure data
     httpOnly: true // Make sures cookie can not be accessible and modified in any way by browser
+    // Cookie có flag này sẽ không thể truy cập thông qua hàm document.cookie ở browser
+    // Do đó, dù web có bị lỗi XSS thì hacker không thể đánh cắp được nó.
+
+    // cookieOptions.secure = true;
+    // Sử dụng Flag Secure: Cookie có flag này chỉ được gửi qua giao thức HTTPS, hacker sẽ không thể sniff được.Sử dụng Flag Secure: Cookie có flag này chỉ được gửi qua giao thức HTTPS, hacker sẽ không thể sniff được.
   };
 
   // Because using Postman, not real https, set secure: true does work with Postman
@@ -48,6 +53,9 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
     role: req.body.role
   });
+
+  const url = `${req.protocol}://${req.get('host')}/me`; // 'http://127.0.0.1:3000/me';
+  await new Email(newUser, url).sendWelcome();
 
   // Login
   createSendToken(newUser, 201, res);
@@ -189,18 +197,12 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false }); // turn off validator before save. It allows us save, add data to 1, more fields
 
   // 3. Send it to user's email
-  const resetURL = `${req.protocol}://${req.get(
-    'host'
-  )}/api/v1/users/resetPassword/${resetToken}`;
-
-  const message = `Forgot your password ?. Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}. \nIf you didn't forget your password please ignore this email`;
-
   try {
-    await sendEmail({
-      email: user.email,
-      subject: 'Password reset token (Valid in 10 minutes !)',
-      message: message
-    });
+    const resetURL = `${req.protocol}://${req.get(
+      'host'
+    )}/api/v1/users/resetPassword/${resetToken}`;
+
+    await new Email(user, resetURL).sendPasswordReset();
 
     res.status(200).json({
       status: 'success',

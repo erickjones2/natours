@@ -1,8 +1,72 @@
+const multer = require('multer');
+const sharp = require('sharp');
+
 const Tour = require('./../models/tourModel');
 // const APIFeatures = require('./../utils/apiFeatures');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const factory = require('./handlerFactory');
+
+// This function is directly store image in RAM as buffer for processing before image was actually store in ROM
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an image, please upload image only !', 400), false);
+  }
+};
+
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+// This is multer milldeware handle photo upload
+exports.updateTourImages = upload.fields([
+  {
+    name: 'imageCover',
+    maxCount: 1 // max image upload with coressponding field
+  },
+  {
+    name: 'images',
+    maxCount: 3
+  }
+]);
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  if (!req.files.imageCover && !req.files.images) return next();
+
+  // 1. Cover image
+  const imageCoverName = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/tours/${imageCoverName}`);
+  req.body.imageCover = imageCoverName;
+
+  // 2. Images
+  req.body.images = [];
+
+  // if we use forEach() instead of map() like below, req.body.images can be empty when next() was called. Because callback() in forEach()
+  // is async but forEach() is not async. sharp() run in background and app cant run to push()
+  await Promise.all(
+    req.files.images.map(async (image, index) => {
+      const imageTourName = `tour-${req.params.id}-${Date.now()}-${index +
+        1}.jpeg`;
+
+      await sharp(image.buffer)
+        .resize(2000, 1333)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`public/img/tours/${imageTourName}`);
+
+      req.body.images.push(imageTourName);
+    })
+  );
+
+  next();
+});
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
