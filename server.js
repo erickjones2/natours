@@ -49,3 +49,12 @@ process.on('unhandledRejection', err => {
     process.exit(1);
   });
 });
+
+// Set up specific Heroku feature
+// SIGTERM is signal from Heroku to force reset our app to keep app fresh after 24 hours
+process.on('SIGTERM', () => {
+  console.log('SIGTERM RECEIVED. Shutting down...');
+  server.close(() => {
+    console.log('Process terminated !');
+  });
+});

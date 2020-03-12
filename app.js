@@ -9,6 +9,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
+const cors = require('cors');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
@@ -34,6 +35,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '10kb' })); // Like body-parser, using this middleware to attach req.body property, default in express
 app.use(express.urlencoded({ extended: true, limit: '10kb' })); // for using req.body when data was submitted by html-form
 app.use(cookieParser());
+
+// IMPLEMENT CORS (Cross-Origin-Resource-Sharing)
+// We can set 'cors' in specific route -> Read doc
+app.use(cors()); // Middleware to add some header('Access-Control-Allow-Origin' = * (* all req)) to request
+
+// // Specify particular web domain in front-end to access API
+// app.use(
+//   cors({
+//     origin: 'https://www.natours.com'
+//   })
+// );
+
+// SIMPLE request is POST, GET
+// COMPLEX request is DELETE, PATH
+// With simple request we just use app.use(cors())
+// But for complex request, browser wil do 'prefight' phase to send OPTIONS request to server to make sure
+// safe to send. So we need to hande OPTIONS request
+app.options('*', cors()); // options is HTTP method like PUT, GET... * is for all routes
 
 // After attach req.body, now we need to fileter body out of malicious code in body
 // Data sanitization against NoSQL injection( "email": { $gt: "" })
@@ -71,7 +90,7 @@ app.use((req, res, next) => {
 // Set security HTTP header
 app.use(helmet()); //use(put a fuction not function call, so helmet() return a function)
 
-// Development logginf using morgan
+// Development logging using morgan
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
