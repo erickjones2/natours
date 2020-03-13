@@ -15,6 +15,8 @@ const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const bookingRouter = require('./routes/bookingRoutes');
+const bookingController = require('./controllers/bookingController');
+
 const viewRouter = require('./routes/viewRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandller = require('./controllers/errorController');
@@ -30,6 +32,15 @@ app.set('views', path.join(__dirname, 'views'));
 // The way html finds css file the same like this
 // app.use(express.static(`${__dirname}/public`)); //Or below
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Need to put that POST here before 'app.use(express.json({ limit: '10kb' }));'. Because we want raw data
+// from Stripe, not json parsed object
+// If payment is successful, Stripe will call webhooks
+app.post(
+  '/webhook-checkout',
+  express.raw({ type: 'application/json' }),
+  bookingController.webhookCheckout
+);
 
 // Limit amount of data from req.body to 10kb to protect server from attacker(overload server)
 app.use(express.json({ limit: '10kb' })); // Like body-parser, using this middleware to attach req.body property, default in express
